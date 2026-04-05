@@ -1,6 +1,6 @@
 # batchbrake
 
-Generate HandBrake batch encode scripts for anime and TV disc rips.
+Generate HandBrake batch encode scripts for TV discs.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ pipx install ./batchbrake
 
 ```bash
 batchbrake disc \
-  -i "/mnt/media/staging/anime/InitialD_1-7.mkv" \
+  -i "/path/to/file/InitialD_1-7.mkv" \
   --show "Initial D" \
   --season 01 \
   --start-ep 1
@@ -31,11 +31,11 @@ batchbrake will probe the file, auto-detect episode boundaries, show you a
 chapter table and proposed mapping, and drop you into a confirmation menu
 before writing anything.
 
-### bulk — encode individually-ripped episode files
+### bulk — encode individual episode files
 
 ```bash
 batchbrake bulk \
-  -d "/mnt/media/staging/anime" \
+  -d "/path/to/file" \
   --prefix "Disc 3" \
   --show "Neon Genesis Evangelion" \
   --season 01 \

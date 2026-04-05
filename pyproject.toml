@@ -1,0 +1,17 @@
+[project]
+name = "batchbrake"
+version = "0.1.0"
+description = "Generate HandBrake batch encode scripts for TV discs"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+batchbrake = "batchbrake.cli:main"
+ 
+[tool.hatch.build.targets.wheel]
+packages = ["src/batchbrake"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

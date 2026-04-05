@@ -12,7 +12,7 @@ Generate HandBrake batch encode scripts for TV discs.
 ## Installation
 
 ```bash
-pipx install ./batchbrake
+pipx install git+https://github.com/fuzzylimes/batchbrake.git
 ```
 
 ## Usage

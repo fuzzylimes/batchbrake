@@ -171,7 +171,7 @@ def run(args, cfg: Config) -> None:
     output_dir = args.output_dir or cfg.output_dir or args.dir
 
     audio_tracks = [int(x) for x in args.audio_tracks.split(",")] if args.audio_tracks else None
-    sub_tracks   = [int(x) for x in args.sub_tracks.split(",")]   if args.sub_tracks   else None
+    sub_tracks   = [] if args.sub_tracks == "0" else ([int(x) for x in args.sub_tracks.split(",")] if args.sub_tracks else None)
 
     script = generate_bulk_script(
         episodes, streams, subtitle_default, args.show, season,

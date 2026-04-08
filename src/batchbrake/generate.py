@@ -44,7 +44,7 @@ def _audio_flags(streams: list[Stream], track_indices: list[int] | None = None) 
 def _sub_flags(streams: list[Stream], subtitle_default: int | None = None,
                track_indices: list[int] | None = None) -> tuple[str, str]:
     """Return (track_list, default_flag) for HandBrake -s / --subtitle-default."""
-    selected = track_indices if track_indices else list(range(1, len(sub_streams(streams)) + 1))
+    selected = track_indices if track_indices is not None else list(range(1, len(sub_streams(streams)) + 1))
     tracks = ",".join(str(i) for i in selected)
     default = f"--subtitle-default {subtitle_default}" if subtitle_default else ""
     return tracks, default

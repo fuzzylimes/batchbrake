@@ -32,18 +32,20 @@ def _header(mode: str, show: str, season: str, source: str, streams: list[Stream
     ]
 
 
-def _audio_flags(streams: list[Stream]) -> tuple[str, str]:
+def _audio_flags(streams: list[Stream], track_indices: list[int] | None = None) -> tuple[str, str]:
     """Return (track_list, encoder_list) for HandBrake -a / --aencoder."""
     audio = audio_streams(streams)
-    tracks = ",".join(str(i + 1) for i in range(len(audio)))
-    encoders = ",".join(["copy"] * len(audio))
+    selected = track_indices if track_indices else list(range(1, len(audio) + 1))
+    tracks = ",".join(str(i) for i in selected)
+    encoders = ",".join(["copy"] * len(selected))
     return tracks, encoders
 
 
-def _sub_flags(streams: list[Stream], subtitle_default: int | None = None) -> tuple[str, str]:
+def _sub_flags(streams: list[Stream], subtitle_default: int | None = None,
+               track_indices: list[int] | None = None) -> tuple[str, str]:
     """Return (track_list, default_flag) for HandBrake -s / --subtitle-default."""
-    subs = sub_streams(streams)
-    tracks = ",".join(str(i + 1) for i in range(len(subs)))
+    selected = track_indices if track_indices else list(range(1, len(sub_streams(streams)) + 1))
+    tracks = ",".join(str(i) for i in selected)
     default = f"--subtitle-default {subtitle_default}" if subtitle_default else ""
     return tracks, default
 
@@ -78,9 +80,11 @@ def generate_disc_script(
     force_crop: bool,
     output_dir: str,
     hb_cmd: str,
+    audio_tracks: list[int] | None = None,
+    sub_tracks: list[int] | None = None,
 ) -> str:
-    a_tracks, a_enc = _audio_flags(streams)
-    s_tracks, _ = _sub_flags(streams)   # disc mode never sets subtitle-default
+    a_tracks, a_enc = _audio_flags(streams, audio_tracks)
+    s_tracks, _ = _sub_flags(streams, track_indices=sub_tracks)   # disc mode never sets subtitle-default
     flags = _encode_flags(quality, preset, force_crop,
                           a_tracks, a_enc, s_tracks, "")
 
@@ -123,9 +127,11 @@ def generate_bulk_script(
     force_crop: bool,
     output_dir: str,
     hb_cmd: str,
+    audio_tracks: list[int] | None = None,
+    sub_tracks: list[int] | None = None,
 ) -> str:
-    a_tracks, a_enc = _audio_flags(streams)
-    s_tracks, s_default = _sub_flags(streams, subtitle_default)
+    a_tracks, a_enc = _audio_flags(streams, audio_tracks)
+    s_tracks, s_default = _sub_flags(streams, subtitle_default, sub_tracks)
     flags = _encode_flags(quality, preset, force_crop,
                           a_tracks, a_enc, s_tracks, s_default)
 

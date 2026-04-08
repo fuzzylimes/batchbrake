@@ -53,12 +53,18 @@ let you confirm before writing the script.
 | `--show` | Show name (required) |
 | `--season` | Season number, zero-padded (default: 01) |
 | `--start-ep` | First episode number in this batch (default: 1) |
+| `--audio-tracks` | Comma-separated audio track numbers to include, e.g. `1,3` (default: all) |
+| `--sub-tracks` | Comma-separated subtitle track numbers to include, e.g. `2` (default: all) |
 | `--quality` | x265 CRF quality, overrides config |
 | `--preset` | HandBrake encoder preset, overrides config |
 | `--allow-crop` | Allow HandBrake auto-crop instead of forcing 0:0:0:0 |
 | `--output-dir` | Where HandBrake writes encoded files, overrides config |
 | `--script-out` | Full path for generated .sh script |
 | `--handbrake-cmd` | HandBrake CLI invocation, overrides config |
+
+Track numbers correspond to the 1-based index within each track type (audio or subtitle),
+as shown in the stream list printed at the start of every run. If omitted, all tracks of
+that type are included.
 
 ## disc-only flags
 

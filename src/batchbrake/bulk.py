@@ -170,9 +170,13 @@ def run(args, cfg: Config) -> None:
     # Resolve output_dir: CLI > config > input directory
     output_dir = args.output_dir or cfg.output_dir or args.dir
 
+    audio_tracks = [int(x) for x in args.audio_tracks.split(",")] if args.audio_tracks else None
+    sub_tracks   = [int(x) for x in args.sub_tracks.split(",")]   if args.sub_tracks   else None
+
     script = generate_bulk_script(
         episodes, streams, subtitle_default, args.show, season,
         quality, preset, force_crop, output_dir, hb_cmd,
+        audio_tracks, sub_tracks,
     )
 
     _write_script(script, args.script_out, cfg.script_dir, args.show, season, start_ep)

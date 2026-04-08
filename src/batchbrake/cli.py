@@ -26,6 +26,12 @@ def _add_common_args(p: argparse.ArgumentParser) -> None:
     enc.add_argument("--allow-crop", action="store_true", default=False,
                      help="Allow HandBrake auto-crop instead of forcing 0:0:0:0")
 
+    trk = p.add_argument_group("track selection (default: include all tracks)")
+    trk.add_argument("--audio-tracks", default=None, metavar="N[,N]",
+                     help="Comma-separated audio track numbers to include (e.g. 1,3)")
+    trk.add_argument("--sub-tracks",   default=None, metavar="N[,N]",
+                     help="Comma-separated subtitle track numbers to include (e.g. 2)")
+
     out = p.add_argument_group("output overrides (all default to config values)")
     out.add_argument("--output-dir",    default=None, metavar="DIR",
                      help="Directory where HandBrake writes encoded files")

@@ -13,9 +13,9 @@ quality = 19
 preset  = "medium"
 
 [encoding]
-# true  = always pass --crop 0:0:0:0 (recommended for DVD sources)
-# false = let HandBrake auto-detect crop values
-force_crop = true
+# true  = always pass --crop 0:0:0:0 (use for DVD sources)
+# false = let HandBrake auto-detect crop values (default)
+force_crop = false
 
 [output]
 # Directory where generated .sh scripts are written. "." = current working dir.
@@ -60,7 +60,7 @@ def load_config() -> Config:
         command    = hb.get("command",    "flatpak run --command=HandBrakeCLI fr.handbrake.ghb"),
         quality    = int(hb.get("quality", 19)),
         preset     = hb.get("preset",    "medium"),
-        force_crop = bool(enc.get("force_crop", True)),
+        force_crop = bool(enc.get("force_crop", False)),
         script_dir = out.get("script_dir", "."),
         output_dir = out.get("output_dir", ""),
         ep_duration= float(disc.get("ep_duration", 24)),

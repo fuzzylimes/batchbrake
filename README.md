@@ -1,6 +1,6 @@
 # batchbrake
 
-Generate HandBrake batch encode scripts for TV discs.
+Generate HandBrake batch encode scripts for disc rips — TV shows and movies.
 
 ## Requirements
 
@@ -31,6 +31,17 @@ batchbrake will probe the file, auto-detect episode boundaries, show you a
 chapter table and proposed mapping, and drop you into a confirmation menu
 before writing anything.
 
+### disc — encode a single movie file
+
+```bash
+batchbrake disc \
+  -i "/path/to/file/Interstellar.mkv" \
+  --movie "Interstellar"
+```
+
+When `--movie` is used, chapter detection and episode numbering are skipped.
+The output is written to `$output_dir/Interstellar/Interstellar.mkv`.
+
 ### bulk — encode individual episode files
 
 ```bash
@@ -48,16 +59,22 @@ let you confirm before writing the script.
 
 ## Common flags (both modes)
 
+`--show` and `--movie` are mutually exclusive — exactly one is required.
+
 | Flag | Description |
 |------|-------------|
-| `--show` | Show name (required) |
-| `--season` | Season number, zero-padded (default: 01) |
-| `--start-ep` | First episode number in this batch (default: 1) |
+| `--show NAME` | TV show name (mutually exclusive with `--movie`) |
+| `--movie NAME` | Movie name — skips season/episode logic (mutually exclusive with `--show`) |
+| `--season` | Season number, zero-padded (default: 01; TV shows only) |
+| `--start-ep` | First episode number in this batch (default: 1; TV shows only) |
 | `--audio-tracks` | Comma-separated audio track numbers to include, e.g. `1,3` (default: all) |
 | `--sub-tracks` | Comma-separated subtitle track numbers to include, e.g. `2` (default: all) |
 | `--quality` | x265 CRF quality, overrides config |
 | `--preset` | HandBrake encoder preset, overrides config |
-| `--allow-crop` | Allow HandBrake auto-crop instead of forcing 0:0:0:0 |
+| `--force-crop` | Force crop to 0:0:0:0 instead of HandBrake auto-detect (off by default) |
+| `--decomb` | Enable `--decomb` for interlaced source material (off by default) |
+| `--animation` | Add `--encoder-tune animation` |
+| `--no-align` | Disable `--align-av` (enabled by default) |
 | `--output-dir` | Where HandBrake writes encoded files, overrides config |
 | `--script-out` | Full path for generated .sh script |
 | `--handbrake-cmd` | HandBrake CLI invocation, overrides config |

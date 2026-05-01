@@ -12,7 +12,7 @@ from .display import (
     print_streams, print_chapter_table,
     print_disc_episode_mapping, menu_choice,
 )
-from .generate import generate_disc_script
+from .generate import generate_disc_script, generate_movie_script
 
 
 # ── Episode dataclass ─────────────────────────────────────────────────────────
@@ -157,19 +157,45 @@ def _confirm_loop(
 
 def run(args, cfg: Config) -> None:
     # Resolve: CLI arg > config > hardcoded fallback
-    season     = args.season    or "01"
-    start_ep   = args.start_ep  or 1
     quality    = args.quality   if args.quality  is not None else cfg.quality
     preset     = args.preset    or cfg.preset
-    force_crop = cfg.force_crop and not args.allow_crop
-    ep_dur     = args.ep_duration if args.ep_duration is not None else cfg.ep_duration
+    force_crop = args.force_crop or cfg.force_crop
     hb_cmd     = args.handbrake_cmd or cfg.command
-
-    print(bold(f"\n── Disc Mode ── {args.input}"))
-    print(f"  Show: {cyan(args.show)}  Season: {cyan(season)}  Start ep: {cyan(str(start_ep))}\n")
+    decomb     = args.decomb
+    animation  = args.animation
+    align_av   = not args.no_align
 
     if not os.path.exists(args.input):
         sys.exit(red(f"Error: file not found: {args.input}"))
+
+    # ── Movie mode ────────────────────────────────────────────────────────────
+    if args.movie:
+        print(bold(f"\n── Disc Mode (movie) ── {args.input}"))
+        print(f"  Movie: {cyan(args.movie)}\n")
+
+        print("Probing file…")
+        _, streams = probe_all(args.input)
+        print_streams(streams)
+
+        output_dir   = args.output_dir or cfg.output_dir or os.path.dirname(os.path.abspath(args.input))
+        audio_tracks = [int(x) for x in args.audio_tracks.split(",")] if args.audio_tracks else None
+        sub_tracks   = [] if args.sub_tracks == "0" else ([int(x) for x in args.sub_tracks.split(",")] if args.sub_tracks else None)
+
+        script = generate_movie_script(
+            args.movie, streams, args.input,
+            quality, preset, force_crop, output_dir, hb_cmd,
+            audio_tracks, sub_tracks, decomb, animation, align_av,
+        )
+        _write_movie_script(script, args.script_out, cfg.script_dir, args.movie)
+        return
+
+    # ── Show mode ─────────────────────────────────────────────────────────────
+    season   = args.season   or "01"
+    start_ep = args.start_ep or 1
+    ep_dur   = args.ep_duration if args.ep_duration is not None else cfg.ep_duration
+
+    print(bold(f"\n── Disc Mode ── {args.input}"))
+    print(f"  Show: {cyan(args.show)}  Season: {cyan(season)}  Start ep: {cyan(str(start_ep))}\n")
 
     print("Probing file…")
     chapters, streams = probe_all(args.input)
@@ -193,15 +219,14 @@ def run(args, cfg: Config) -> None:
     episodes = _confirm_loop(episodes, chapters, start_ep)
 
     # Resolve output_dir: CLI > config > source file directory
-    output_dir = args.output_dir or cfg.output_dir or os.path.dirname(os.path.abspath(args.input))
-
+    output_dir   = args.output_dir or cfg.output_dir or os.path.dirname(os.path.abspath(args.input))
     audio_tracks = [int(x) for x in args.audio_tracks.split(",")] if args.audio_tracks else None
     sub_tracks   = [] if args.sub_tracks == "0" else ([int(x) for x in args.sub_tracks.split(",")] if args.sub_tracks else None)
 
     script = generate_disc_script(
         episodes, streams, args.input, args.show, season,
         quality, preset, force_crop, output_dir, hb_cmd,
-        audio_tracks, sub_tracks,
+        audio_tracks, sub_tracks, decomb, animation, align_av,
     )
 
     _write_script(script, args.script_out, cfg.script_dir, args.show, season, start_ep)
@@ -217,6 +242,25 @@ def _write_script(script: str, script_out: str | None, cfg_script_dir: str,
     else:
         safe = re.sub(r"[^\w\-]", "_", show)
         path = os.path.join(cfg_script_dir, f"encode_{safe}_S{season}_E{start_ep:02d}.sh")
+
+    with open(path, "w") as f:
+        f.write(script)
+    os.chmod(path, 0o755)
+
+    print(green(f"\n✓ Script written to: {bold(path)}"))
+    print(dim("  Review it, then run it when ready.\n"))
+
+
+def _write_movie_script(script: str, script_out: str | None, cfg_script_dir: str,
+                        movie: str) -> None:
+    from .display import green, bold, dim
+    import stat
+
+    if script_out:
+        path = script_out
+    else:
+        safe = re.sub(r"[^\w\-]", "_", movie)
+        path = os.path.join(cfg_script_dir, f"encode_{safe}.sh")
 
     with open(path, "w") as f:
         f.write(script)

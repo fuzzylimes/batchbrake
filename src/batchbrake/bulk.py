@@ -11,7 +11,7 @@ from .display import (
     bold, cyan, yellow, red, dim,
     print_streams, print_bulk_episode_mapping, menu_choice,
 )
-from .generate import generate_bulk_script
+from .generate import generate_bulk_script, generate_movie_script
 
 
 # ── Episode file dataclass ────────────────────────────────────────────────────
@@ -141,21 +141,52 @@ def _confirm_loop(episodes: list[EpisodeFile]) -> list[EpisodeFile]:
 # ── Subcommand entry point ────────────────────────────────────────────────────
 
 def run(args, cfg: Config) -> None:
-    season     = args.season   or "01"
-    start_ep   = args.start_ep or 1
     quality    = args.quality  if args.quality is not None else cfg.quality
     preset     = args.preset   or cfg.preset
-    force_crop = cfg.force_crop and not args.allow_crop
+    force_crop = args.force_crop or cfg.force_crop
     hb_cmd     = args.handbrake_cmd or cfg.command
+    decomb     = args.decomb
+    animation  = args.animation
+    align_av   = not args.no_align
 
     prefix_note = f"  prefix: {cyan(args.prefix)}" if args.prefix else ""
-    print(bold(f"\n── Bulk Mode ── {args.dir}"))
-    print(f"  Show: {cyan(args.show)}  Season: {cyan(season)}  Start ep: {cyan(str(start_ep))}{prefix_note}\n")
 
     files = _discover(args.dir, args.prefix)
     if not files:
         hint = f' matching prefix "{args.prefix}"' if args.prefix else ""
         sys.exit(red(f"Error: no .mkv files found in {args.dir}{hint}"))
+
+    # ── Movie mode ────────────────────────────────────────────────────────────
+    if args.movie:
+        print(bold(f"\n── Bulk Mode (movie) ── {args.dir}"))
+        print(f"  Movie: {cyan(args.movie)}{prefix_note}\n")
+
+        if len(files) > 1:
+            print(yellow(f"  Warning: {len(files)} files found — using first: {os.path.basename(files[0])}"))
+        input_path = files[0]
+
+        print(f"Probing streams from: {dim(os.path.basename(input_path))}…")
+        streams = probe_streams(input_path)
+        print_streams(streams)
+
+        output_dir   = args.output_dir or cfg.output_dir or args.dir
+        audio_tracks = [int(x) for x in args.audio_tracks.split(",")] if args.audio_tracks else None
+        sub_tracks   = [] if args.sub_tracks == "0" else ([int(x) for x in args.sub_tracks.split(",")] if args.sub_tracks else None)
+
+        script = generate_movie_script(
+            args.movie, streams, input_path,
+            quality, preset, force_crop, output_dir, hb_cmd,
+            audio_tracks, sub_tracks, decomb, animation, align_av,
+        )
+        _write_movie_script(script, args.script_out, cfg.script_dir, args.movie)
+        return
+
+    # ── Show mode ─────────────────────────────────────────────────────────────
+    season   = args.season   or "01"
+    start_ep = args.start_ep or 1
+
+    print(bold(f"\n── Bulk Mode ── {args.dir}"))
+    print(f"  Show: {cyan(args.show)}  Season: {cyan(season)}  Start ep: {cyan(str(start_ep))}{prefix_note}\n")
 
     print(f"Found {bold(str(len(files)))} file(s).")
     print(f"Probing streams from: {dim(os.path.basename(files[0]))}…")
@@ -168,15 +199,14 @@ def run(args, cfg: Config) -> None:
     episodes = _confirm_loop(episodes)
 
     # Resolve output_dir: CLI > config > input directory
-    output_dir = args.output_dir or cfg.output_dir or args.dir
-
+    output_dir   = args.output_dir or cfg.output_dir or args.dir
     audio_tracks = [int(x) for x in args.audio_tracks.split(",")] if args.audio_tracks else None
     sub_tracks   = [] if args.sub_tracks == "0" else ([int(x) for x in args.sub_tracks.split(",")] if args.sub_tracks else None)
 
     script = generate_bulk_script(
         episodes, streams, subtitle_default, args.show, season,
         quality, preset, force_crop, output_dir, hb_cmd,
-        audio_tracks, sub_tracks,
+        audio_tracks, sub_tracks, decomb, animation, align_av,
     )
 
     _write_script(script, args.script_out, cfg.script_dir, args.show, season, start_ep)
@@ -191,6 +221,24 @@ def _write_script(script: str, script_out: str | None, cfg_script_dir: str,
     else:
         safe = re.sub(r"[^\w\-]", "_", show)
         path = os.path.join(cfg_script_dir, f"encode_{safe}_S{season}_E{start_ep:02d}.sh")
+
+    with open(path, "w") as f:
+        f.write(script)
+    os.chmod(path, 0o755)
+
+    print(green(f"\n✓ Script written to: {bold(path)}"))
+    print(dim("  Review it, then run it when ready.\n"))
+
+
+def _write_movie_script(script: str, script_out: str | None, cfg_script_dir: str,
+                        movie: str) -> None:
+    from .display import green, bold, dim
+
+    if script_out:
+        path = script_out
+    else:
+        safe = re.sub(r"[^\w\-]", "_", movie)
+        path = os.path.join(cfg_script_dir, f"encode_{safe}.sh")
 
     with open(path, "w") as f:
         f.write(script)

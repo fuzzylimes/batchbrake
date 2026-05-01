@@ -11,20 +11,30 @@ from . import bulk as bulk_cmd
 # ── Shared args ───────────────────────────────────────────────────────────────
 
 def _add_common_args(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--show",    required=True, metavar="NAME",
-                   help='Show name, e.g. "Initial D"')
+    src = p.add_mutually_exclusive_group(required=True)
+    src.add_argument("--show",  metavar="NAME",
+                     help='TV show name, e.g. "Initial D"')
+    src.add_argument("--movie", metavar="NAME",
+                     help='Movie name, e.g. "Interstellar" (skips season/episode logic)')
+
     p.add_argument("--season",  default=None,  metavar="NN",
-                   help="Season number, zero-padded (default: 01)")
+                   help="Season number, zero-padded (default: 01; ignored for --movie)")
     p.add_argument("--start-ep", type=int, default=None, metavar="N",
-                   help="First episode number in this batch (default: 1)")
+                   help="First episode number in this batch (default: 1; ignored for --movie)")
 
     enc = p.add_argument_group("encoding overrides (all default to config values)")
     enc.add_argument("--quality",    type=int, default=None, metavar="N",
                      help="x265 CRF quality")
     enc.add_argument("--preset",     default=None, metavar="PRESET",
                      help="HandBrake encoder preset")
-    enc.add_argument("--allow-crop", action="store_true", default=False,
-                     help="Allow HandBrake auto-crop instead of forcing 0:0:0:0")
+    enc.add_argument("--force-crop", action="store_true", default=False,
+                     help="Force crop to 0:0:0:0 instead of HandBrake auto-detect")
+    enc.add_argument("--decomb",     action="store_true", default=False,
+                     help="Enable --decomb (for interlaced source material; off by default)")
+    enc.add_argument("--animation",  action="store_true", default=False,
+                     help="Add --encoder-tune animation")
+    enc.add_argument("--no-align",   action="store_true", default=False,
+                     help="Disable --align-av (included by default)")
 
     trk = p.add_argument_group("track selection (default: include all tracks)")
     trk.add_argument("--audio-tracks", default=None, metavar="N[,N]",
@@ -53,6 +63,8 @@ def build_parser() -> argparse.ArgumentParser:
             "  batchbrake disc -i InitialD_1-7.mkv --show 'Initial D' --season 01 --start-ep 1\n"
             "  batchbrake bulk -d /mnt/media/staging/anime --prefix 'Disc 3' \\\n"
             "                  --show 'Neon Genesis Evangelion' --season 01 --start-ep 11\n"
+            "  batchbrake disc -i Interstellar.mkv --movie 'Interstellar'\n"
+            "  batchbrake disc -i OldAnime.mkv --show 'Old Anime' --season 01 --decomb --animation\n"
         ),
     )
     sub = parser.add_subparsers(dest="command", required=True, metavar="{disc,bulk}")

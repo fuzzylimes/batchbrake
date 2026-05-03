@@ -65,7 +65,7 @@ def _encode_flags(quality: int, preset: str, force_crop: bool,
                   a_tracks: str, a_enc: str, s_tracks: str, s_default: str,
                   decomb: bool = False, animation: bool = False, align_av: bool = True) -> str:
     """Build the common HandBrake flag block (everything after -i / -o / --chapters)."""
-    crop = "--crop 0:0:0:0" if force_crop else "# crop: HandBrake auto-detect"
+    crop = "--crop 0:0:0:0"
     lines = [
         f"    --encoder x265 --quality {quality} --encoder-preset {preset} \\"]
     if animation:
@@ -76,7 +76,8 @@ def _encode_flags(quality: int, preset: str, force_crop: bool,
         lines.append(f"    -s {s_tracks} \\")
         if s_default:
             lines.append(f"    {s_default} \\")
-    lines.append(f"    {crop} \\")
+    if force_crop:
+        lines.append(f"    {crop} \\")
     tail = "--markers"
     if decomb:
         tail += " --decomb"
